@@ -1,7 +1,10 @@
-﻿![UE](images/image01.jpeg)                  ![Generalitat](images/image02.jpeg)                                   ![Mare](images/image03.png)
+﻿![Generalitat](./images/generalitat.png) ![Calidad](./images/calidad.png) &nbsp;&nbsp;![Union europea](./images/unioneuropea.png) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ![Mare Nostrum](./images/iesmarenostrum.png)
+
+<br>
+<br>
 
 
-# Tema 12. API REST
+# Tema 10. API REST
 
 [*1. Introducción.*](#_apartado1)
 
@@ -9,7 +12,7 @@
 
 [*3. Creación y Organización del Proyecto*](#_apartado3)
 
-[*4. Creación de la Clase Comarca						6*](#_apartado4)
+[*4. Creación de la Clase Comarca*](#_apartado4)
 
 [*5. Creación del Controlador.*](#_apartado5)
 
@@ -18,30 +21,70 @@
 [*7. The Movie DataBase*](#_apartado7)
 
 
+<br>
+<br>
 
 # <a name="_apartado1"></a>1. Introducción.
 
-En este tema vamos a ver de manera práctica una introducción al acceso a una API REST desde un formulario de Visual Studio.
+En el tema anterior hemos trabajado con acceso a datos en la nube utilizando **Supabase**.
+En ese caso, utilizábamos una **librería** que nos permitía obtener objetos directamente desde la base de datos.
 
-Una API REST es una interfaz de comunicación entre sistemas de información que usa el protocolo de transferencia de hipertexto (hypertext transfer protocol o HTTP, por sus siglas en inglés) para obtener datos o ejecutar operaciones sobre dichos datos en diversos formatos, como pueden ser XML o JSON.
+Sin embargo, internamente, **Supabase utiliza una API REST** para comunicarse con la base de datos.
 
-En nuestro tema simplemente vamos a iniciarnos en el acceso GET a través de http recopilando información de una página web que ofrece este servicio API REST.
+En este tema vamos a aprender qué es una API REST y cómo acceder a ella directamente, realizando peticiones HTTP y trabajando con los datos en formato JSON.
 
+Es decir, vamos a pasar de utilizar una capa que oculta la comunicación, a **entender y controlar cómo se realiza realmente**.
 
+---
 
-# <a name="_apartado2"></a>2. API REST utilizada.
+Podemos entender una API REST como un intermediario entre nuestra aplicación y una fuente de datos:
 
-Vamos a ver dos ejemplos de llamadas API para entender en primer lugar que datos queremos manejar.
+- Nuestra aplicación (cliente) realiza una petición
+- La API (servidor) procesa esa petición
+- Y devuelve la información en formato JSON
 
-Por ejemplo, podemos hacer una llamada a esta dirección:
+Por ejemplo:
+
+Cliente → "Dame las comarcas de Alacant"  
+API → devuelve una lista de comarcas en formato JSON
+
+---
+
+Una API REST es una interfaz de comunicación entre sistemas de información que utiliza el protocolo HTTP para obtener datos o ejecutar operaciones sobre ellos. Estos datos se suelen representar en formatos como JSON o XML.
+
+En este tema vamos a centrarnos en el uso más básico: **realizar peticiones GET** para obtener información desde una API.
+
+Vamos a empezar de manera práctica accediendo a una API REST desde un formulario en Visual Studio.
+
+<br>
+<br>
+
+# <a name="_apartado2"></a>2. API REST utilizada. Comarcas
+
+Antes de empezar a programar, vamos a analizar qué datos nos devuelve una API REST y qué formato tienen.
+
+Para ello, vamos a utilizar una API muy sencilla que devuelve información sobre provincias y comarcas de la Comunidad Valenciana.
+
+Por ejemplo, si escribimos en el navegador la siguiente dirección:
 
 <https://node-comarques-rest-server-production.up.railway.app/api/comarques/provincies>
 
-Al poner esa dirección http en nuestro navegador obtendríamos un resultado parecido a este, en el que nos aparecen las tres provincias de nuestra comunidad:
+obtenemos una respuesta en formato JSON con las provincias disponibles:
 
 ![JSON Provincias](images/image04.png)
 
-La dirección que vamos a utilizar nosotros es una que, incorporando el nombre de la provincia, nos devolvería información sobre las comarcas de esa provincia (el nombre y un enlace a una foto):
+---
+
+### ¿Qué estamos viendo?
+
+La API nos está devolviendo **datos en formato JSON**, que es un formato de texto estructurado muy utilizado para intercambiar información.
+
+---
+
+### Peticiones con parámetros 
+
+Las APIs REST suelen permitir modificar la información que pedimos mediante parámetros en la URL.  
+En nuestro caso, podemos pedir las comarcas de una provincia concreta añadiendo su nombre al final de la dirección:
 
 <https://node-comarques-rest-server-production.up.railway.app/api/comarques/comarquesAmbImatge/Alacant>
 
@@ -51,13 +94,35 @@ La dirección que vamos a utilizar nosotros es una que, incorporando el nombre d
 
 ![JSON Comarcas](images/image05.png)
 
+### Estructura de los datos
+
+Si observamos el JSON, vemos que cada elemento contiene información como:
+
+- nom → nombre de la comarca
+- img → enlace a una imagen
+
+Es decir, la API devuelve una lista de objetos.
+Por ejemplo, un elemento sería:
+
+```json
+{
+  "nom": "L'Alacantí",
+  "img": "https://..."
+}
+```
+
+<br>
+<br>
+
 # <a name="_apartado3"></a>3. Creación y Organización del Proyecto
 
 En este apartado vamos a empezar a crear nuestro proyecto e ir organizando para poder acceder a la API.
 
-Una vez creado el proyecto vamos a crear, en el Explorador de Soluciones, tres carpetas (Models, Controllers y Views).
+Seguiremos una estructura similar a la del tema anterior, reutilizando el patrón MVC (Modelo - Vista - Controlador), aunque en este caso los datos no provienen de una base de datos, sino de una API REST.
 
-En la carpeta **Views** meteremos los ficheros relacionados con interfaz. En nuestro caso el Formulario.
+Una vez creado el proyecto vamos a crear, en el Explorador de Soluciones, tres carpetas (**Models, Controllers y Views**).
+
+En la carpeta **Views** meteremos los ficheros relacionados con interfaz.
 
 En la carpeta **Models** crearemos las clases que nos permitan recuperar la información de la API.
 
@@ -65,22 +130,30 @@ En la carpeta **Controllers** meteremos aquellos elementos que nos sirvan como c
 
 ![Carpetas](images/image06.png)
 
+<br>
+
 Vamos, en este apartado a empezar a crear la interfaz de nuestro Formulario.
 
 Para ello, en nuestro formulario vamos a meter los siguientes controles:
 
-- Un comboBox en el que posteriormente tendremos el nombre de las tres provincias (Alacant, València y Castelló). Le llamaremos `cmbProvincias`.
-- Un listBox en el que introduciremos la lista de nombres de las comarcas pertenecientes a la provincia que elijamos. Se llamará `lsbComarcas`.
-- Además, tendremos un label y un linkLabel en el que mostraremos el nombre de la comarca y un enlace a su imagen cuando elijamos una comarca en la lista.  `lblNombreComarca` y `lnkImagen`.
+- Un **comboBox** en el que posteriormente tendremos el nombre de las tres provincias (Alacant, València y Castelló). Le llamaremos `cmbProvincias`.
+- Un **listBox** en el que introduciremos la lista de nombres de las comarcas pertenecientes a la provincia que elijamos. Se llamará `lsbComarcas`.
+- Además, tendremos un **label** y un **linkLabel** en el que mostraremos el nombre de la comarca y un enlace a su imagen cuando elijamos una comarca en la lista.  `lblNombreComarca` y `lnkImagen`.
 
 Tendrá un aspecto similar al siguiente:
 
 ![Formulario](images/image07.png)
 
+<br>
+<br>
 
 # <a name="_apartado4"></a>4. Creación de la Clase Comarca
 
-A continuación, vamos a crear el modelo de datos que nos permitirá cargar los datos de la API y trabajar con ellos.
+A continuación, vamos a crear **el modelo de datos** que nos permitirá cargar los datos de la API y trabajar con ellos.
+
+Flujo que vamos a seguir:
+
+**API → devuelve JSON → lo deserializamos → objetos C#**
 
 Para ello abrimos en nuestro navegador la petición a la API, por ejemplo, con la provincia de Alacant:
 
@@ -92,17 +165,24 @@ Si pulsamos en Datos sin procesar nos aparece:
 
 ![Sin procesar](images/image08.png)
 
+Si observamos el JSON, vemos que cada comarca tiene una estructura como:
+
+- nom → nombre
+- img → enlace a la imagen
+
+Por tanto, **nuestra clase debe tener propiedades con esos mismos nombres**.
+
 En este momento **seleccionamos y copiamos** un elemento individual (correspondería a una sola comarca):
 
 ![Textote](images/image09.png)
 
-En nuestro navegador nos vamos a la [página JSonToCSharp](https://json2csharp.com/) y en ella **pegamos** y pulsamos Convertir:
+En nuestro navegador nos vamos a la [página JsonToCSharp](https://json2csharp.com/) y en ella **pegamos** y pulsamos Convertir:
 
 ![Convertir](images/image10.png)
 
 De esta manera obtenemos la clase que luego utilizaremos. 
 
-Nos vamos a nuestra carpeta Models y en ella creamos una nueva Clase que llamaremos Comarca y que adaptaremos con el código que hemos obtenido en la página anterior:
+Nos vamos a nuestra carpeta *Models* y en ella creamos una nueva Clase que llamaremos `Comarca` y que adaptaremos con el código que hemos obtenido en la página anterior:
 
 ```csharp
 namespace _01ApiComarcas.Models
@@ -115,12 +195,33 @@ namespace _01ApiComarcas.Models
 }
 ```
 
+<br>
 
+💡 Nota:
 
+Las propiedades de la clase tienen el mismo nombre que los campos del JSON (`nom`, `img`).  
+Esto permite que la conversión (deserialización) se realice automáticamente.
+
+En otros casos, cuando los nombres no coinciden, se pueden utilizar anotaciones para mapear los datos, como vimos en el tema anterior con Supabase.
+
+A partir de ahora, cada vez que trabajemos con una API REST, seguiremos este mismo proceso:
+
+1. Analizar el JSON que devuelve la API
+2. Crear una clase que represente esos datos
+3. Convertir el JSON en objetos de C#
+
+Este patrón se repetirá en los siguientes ejemplos.
+
+<br>
+<br>
 
 # <a name="_apartado5"></a>5. Creación del Controlador.
 
 En este apartado vamos a crear la clase **ComarcasController**, dentro de la carpeta Controllers.
+
+En este caso no utilizamos un repositorio como en el tema anterior, ya que el propio controlador se encarga de acceder directamente a la API.
+
+En aplicaciones más complejas sí podría existir una capa adicional, pero para simplificar trabajaremos directamente desde el controlador.
 
 Tendrá el siguiente código:
 
@@ -137,38 +238,41 @@ public class ComarcasController
         _httpClient = new HttpClient();
     }
          
-    // Método asincrono que realiza la petición a la API
+    // Método asíncrono que realiza la petición a la API
     public async Task<List<Comarca>> GetComarcas(String provincia)
     {
         try
         {
-            List<Comarca> listaComarcas = new List<Comarca>();
+            // 1. Realizamos la petición HTTP a la API
+            string url = "https://node-comarques-rest-server-production.up.railway.app/api/comarques/comarquesAmbImatge/" + provincia;
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
 
-            // Hacemos la petición al servidor api
-            HttpResponseMessage response = await _httpClient.GetAsync("https://node-comarques-rest-server-production.up.railway.app/api/comarques/comarquesAmbImatge/" + provincia);
-
-            // Inicia una excepción si la respuesta http es false
+            // 2. Comprobamos si la respuesta es correcta
             response.EnsureSuccessStatusCode();
 
-            // Si la respuesta ha sido true (no salta la excepción)
-            // Recogemos el JSON devuelto con los datos
+            // 3. Obtenemos el JSON como texto
             string responseJSON = await response.Content.ReadAsStringAsync();
 
-            // Deserializamos el JSON obtenido a nuestro modelo
-            // convirtiendolo en una lista de comarcas. 
-            // Debemos instalar el paquete con Alt+Enter
-            listaComarcas = JsonConvert.DeserializeObject<List<Comarca>>(responseJSON);
+            // 4. Convertimos (deserializamos) el JSON a objetos C#
+            List<Comarca> listaComarcas = JsonConvert.DeserializeObject<List<Comarca>>(responseJSON);
 
             return listaComarcas;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine("Error al llamar a la API: " + ex.Message);
             return null;
         }
     }
 }
 ```
 
+---
+💡 Nota:
+
+En aplicaciones reales, *HttpClient* suele reutilizarse y no crearse muchas veces, pero para simplificar el aprendizaje en este ejemplo lo creamos en el constructor.
+
+---
 
 Para poder utilizar JsonConvert, que nos aparece con error, debemos instalar **NewtonSoft.Json**. Para ello pulsamos Alt + Intro e instalamos el paquete:
 
@@ -178,12 +282,39 @@ Como podemos ver en el código, lo que estamos haciendo es una petición http qu
 
 Si la respuesta ha sido correcta, obtenemos un string con el JSON (`responseJSON`), y la deserializamos para obtener la lista de Comarcas.
 
+### 🔄 Flujo de trabajo
 
-# <a name="_apartado6"></a>6. Formulario
+En este método estamos siguiendo siempre el mismo proceso:
+
+1. Realizar una petición HTTP a la API (`GetAsync`)
+2. Comprobar que la respuesta es correcta
+3. Leer el contenido de la respuesta (JSON)
+4. Convertir ese JSON a objetos de C#
+
+Es decir:
+
+API → JSON (string) → objetos (List<Comarca>)
+
+---
+
+### 🔗 Relación con el tema anterior
+
+Si comparamos con el tema anterior:
+
+- Antes utilizábamos un repositorio que accedía a Supabase
+- Ahora realizamos una petición HTTP directamente a una API
+
+En ambos casos, el objetivo es el mismo: obtener datos y trabajar con ellos como objetos en C#
+
+
+<br>
+<br>
+
+# <a name="_apartado6"></a>6. Interfaz
 
 Vamos, por último, a ver el código que **escribimos en nuestro formulario** para poder ver las comarcas de las distintas provincias.
 
-En primer lugar, vamos a hacer un subprograma, que posteriormente llamaremos en FormLoad para rellenar el comboBox de provincias:
+En primer lugar, vamos a hacer un subprograma, que posteriormente llamaremos en `FormLoad` para rellenar el comboBox de provincias:
 
 ```csharp
 private void cargarProvincias()
@@ -203,38 +334,77 @@ private async void cargarComarcas(String provincia)
 {
     _listaComarcas = await _comarcasController.GetComarcas(provincia);
     
+    if (_listaComarcas == null)
+    {
+        MessageBox.Show("Error al cargar las comarcas.");
+        return;
+    }
+
     // Cargamos en el listBox el nombre de las comarcas
     lsbComarcas.Items.Clear();
     foreach (Comarca comarca in _listaComarcas)
     {
         lsbComarcas.Items.Add(comarca.nom);
     }
-
-    lsbComarcas.SelectedIndex = 0;
+    
+    if (_listaComarcas.Count > 0)
+    {
+        lsbComarcas.SelectedIndex = 0;
+    }
 }
 ```
 
-***
-**Programación Asíncrona.**
+<br>
+
+---
+
+### Programación Asíncrona.
+
+Repasamos brevemente el concepto de programación asíncrona que ya vimos en el tema 9:
 
 Como vemos en la definición de la función anterior aparece la palabra reservada `async`. Esto hace que esa función se ejecute de manera **asíncrona**. 
 
 Cuando consumimos un recurso externo a nuestro código (un fichero, una BD, un servicio online…), este puede tardar y retardar o incluso bloquear nuestra aplicación.
 
-De esta manera, cuando llamamos a esta función, **el llamador no espera al retorno** de esta, sino que sigue ejecutando las líneas que tenga a continuación.
+Cuando utilizamos `async` y `await`, permitimos que la aplicación no se bloquee mientras espera la respuesta de un recurso externo.
 
-Es importante que todo el hilo de acontecimientos sea asíncrono, por eso el método `comarcasControler.GetComarcas` también lo es.
+Por ejemplo, al llamar a una API:
+- La petición puede tardar unos segundos
+- Gracias a `await`, la interfaz sigue respondiendo
+- Cuando llega la respuesta, el método continúa su ejecución
 
-La palabra reservada `await` hace que el resto del código **dentro de la función asíncrona** espere a la respuesta de esa línea de código.
+Esto es especialmente importante en interfaces gráficas, ya que evita que la aplicación se “congele”.
+
+Es importante que **toda la cadena de llamadas sea asíncrona**, por eso el método `comarcasController.GetComarcas` que es asíncrono es llamada con la palabra reservada `await`.
+
+La palabra reservada `await` hace que el resto del código **dentro de la función asíncrona** espere a la respuesta de esa línea de código, y nosotros al poner async a nuestra función estamos asegurando el asincronimso en todo el hilo de acontecimientos.
+
+---
 
 [Utilización de async y await](https://www.campusmvp.es/recursos/post/async-y-await-en-c-como-manejar-asincronismo-en-net-de-manera-facil.aspx)
 
 [Operador await en C#](https://learn.microsoft.com/es-es/dotnet/csharp/language-reference/operators/await)
-***
 
+<hr>
 
+<br>
 
-Ahora, para poder cargar las comarcas dependiendo de la provincia elegida en el `comboBox`, llamaremos a esa función a través del evento `selectedIndexChanged`:
+### 🔄 Flujo de la aplicación
+
+El funcionamiento del formulario es el siguiente:
+
+1. Al iniciar la aplicación, se cargan las provincias en el comboBox
+2. Cuando el usuario selecciona una provincia:
+   - Se realiza una llamada a la API
+   - Se obtiene la lista de comarcas
+   - Se muestran en el listBox
+3. Cuando el usuario selecciona una comarca:
+   - Se muestra su nombre
+   - Se muestra el enlace a la imagen
+
+De esta forma, la interfaz responde a las acciones del usuario y actualiza los datos dinámicamente.
+
+Para poder cargar las comarcas dependiendo de la provincia elegida en el `comboBox`, llamaremos a esa función a través del evento `selectedIndexChanged`:
 
 ![selectedIndexChanged](images/image12.png)
 
@@ -255,10 +425,12 @@ private void mostrarComarca(int pos)
 
 private void lsbComarcas_SelectedIndexChanged(object sender, EventArgs e)
 {
-    mostrarComarca(lsbComarcas.SelectedIndex);
-    lnkImagen.LinkVisited = false;
+    if (lsbComarcas.SelectedIndex >= 0)
+    {
+        mostrarComarca(lsbComarcas.SelectedIndex);
+        lnkImagen.LinkVisited = false;
+    }
 }
-
 ```
 
 
@@ -317,15 +489,24 @@ private void cargarProvincias()
 private async void cargarComarcas(String provincia)
 {
     _listaComarcas = await _comarcasController.GetComarcas(provincia);
+
+    if (_listaComarcas == null)
+    {
+        MessageBox.Show("Error al cargar las comarcas.");
+        return;
+    }
     
-    // Cargamos en el listBox el nombre de las comarcas
     lsbComarcas.Items.Clear();
+
     foreach (Comarca comarca in _listaComarcas)
     {
         lsbComarcas.Items.Add(comarca.nom);
     }
 
-    lsbComarcas.SelectedIndex = 0;
+    if (_listaComarcas.Count > 0)
+    {
+        lsbComarcas.SelectedIndex = 0;
+    }
 }
 
 private void cmbProvincias_SelectedIndexChanged(object sender, EventArgs e)
@@ -342,8 +523,11 @@ private void mostrarComarca(int pos)
 
 private void lsbComarcas_SelectedIndexChanged(object sender, EventArgs e)
 {
-    mostrarComarca(lsbComarcas.SelectedIndex);
-    lnkImagen.LinkVisited = false;
+    if (lsbComarcas.SelectedIndex >= 0)
+    {
+        mostrarComarca(lsbComarcas.SelectedIndex);
+        lnkImagen.LinkVisited = false;
+    }
 }
 
 private void lnkImagen_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -380,16 +564,44 @@ private void btnInfoComarca_Click(object sender, EventArgs e)
 }
 ```
 
+💡 Observación:
+
+En este apartado vemos cómo la interfaz (View) se comunica con el controlador, que es el que realiza la petición a la API.
+
+No accedemos directamente a la API desde la interfaz, lo que mantiene el código organizado siguiendo el patrón MVC.
+
+
+### Ejercicio
 
 Se deja como ejercicio al alumno añadir un botón en el que según el nombre la comarca seleccionada accedamos a esta petición http obteniendo información sobre la misma:
 
 <https://node-comarques-rest-server-production.up.railway.app/api/comarques/infoComarca/L'alacantí>
 
+💡 Este ejercicio sigue exactamente el mismo patrón:
+
+- Cambia la URL de la API
+- Analiza el JSON que devuelve
+- Crea la clase correspondiente
+- Realiza la llamada desde el controlador
+
+<br>
+<br>
 
 # <a name="_apartado7"></a>7. Api Rest The Movie DataBase
 
 ## The Movie DataBase
-Vamos a realizar un ejercicio para trabajar con otra API Rest más completa y dinámica que la que hemos utilizado en el apartado anterior.
+
+En el apartado anterior hemos trabajado con una API sencilla en la que el JSON se convertía directamente en una lista de objetos.
+
+En este caso, vamos a trabajar con una API más completa, en la que:
+
+- Se necesita una API Key para acceder
+- El JSON devuelto es más complejo
+- Tendremos que extraer la información que nos interesa
+
+Aun así, el proceso general será el mismo:
+
+API → JSON → objetos → interfaz
 
 Esta API Rest es la de la página [The Movie DataBase](https://www.themoviedb.org/), en la que tenemos una completísima base de datos de películas y series.
 
@@ -400,6 +612,7 @@ Uno de ellos es el de las películas ahora mismo en cartelera:
 <https://developer.themoviedb.org/reference/movie-now-playing-list>.
 
 ## Api Key
+
 Para poder trabajar con esta API Rest necesitamos una **clave o API Key**, a diferencia con la API de comarcas que trabajamos en los apartados anteriores que no la necesitaban.
 
 Si en la página [Get Starter](https://developer.themoviedb.org/reference/intro/getting-started) pulsamos sobre el botón Get Api Key:
@@ -413,6 +626,7 @@ Nos pide que nos hagamos una cuenta y en ella tendremos que ir al apartado corre
 Tendremos que copiar luego nuestra API Key para poder acceder al endpoint deseado.
 
 ## Creación y organización del proyecto
+
 De nuevo, como en el apartado anterior, crearemos un nuevo proyecto y en el mismo, crearemos las carpetas **Models, Controllers, Views**.
 
 Vamos a crear a continuación el formulario principal en el que vamos a visualizar nuestras películas. Tendrá un aspecto similar a este:
@@ -421,7 +635,7 @@ Vamos a crear a continuación el formulario principal en el que vamos a visualiz
 
 Siendo un elemento de tipo PictureBox el rectángulo que aparece en medio y que nos permitirá ver la portada de la película.
 
-**Creación de la clase Película.**
+## Creación de la clase Película.
 
 Vamos a crear a continuación la clase película, que al igual que hacíamos antes con las comarcas me permite trabajar con un elemento de tipo Película.
 
@@ -437,6 +651,10 @@ Para ello, lo podemos hacer en el navegador, o bien en el programa [Postman](htt
 Vemos que el resultado JSON nos ofrece información, así como una lista de películas que es la que nos interesa (uno de sus elementos) para utilizar en [Json2CSharp](https://json2csharp.com/) para poder crear la clase **Película** en **Models**:
 
 ![Pelicula Class](images/image18.png)
+
+Debido a que el JSON contiene muchos campos, utilizaremos la herramienta para generar automáticamente la clase.
+
+No es necesario utilizar todos los campos, pero en este caso los dejamos para poder acceder a distinta información si lo necesitamos más adelante.
 
 Dando como resultado la clase **Models/Película**:
 
@@ -461,9 +679,19 @@ public class Pelicula
 
 ```
 
-**Creación del controlador**
+## Creación del controlador
 
 A continuación, vamos a crear **Controllers/PeliculasController** que nos permitirá acceder a la API y obtener una lista de películas.
+
+### 🧠 Diferencia importante en el JSON
+
+A diferencia del ejemplo anterior, la API de The Movie Database no devuelve directamente una lista de películas.
+
+En su lugar, devuelve un objeto JSON que contiene varias propiedades, entre ellas:
+
+- `results`: que es la lista de películas que nos interesa
+
+Por tanto, en este caso tendremos que acceder primero a esa propiedad para obtener la lista real.
 
 Ponemos el código a continuación, recordando que se debe instalar el paquete **NewtonSoft.JSON**:
 
@@ -501,6 +729,7 @@ public class PeliculasController
         }
         catch (Exception)
         {
+            Console.WriteLine("Error al obtener películas: " + ex.Message);
             return null;
         }
     }
@@ -508,8 +737,36 @@ public class PeliculasController
 
 ```
 
+### 🔄 Procesamiento del JSON
 
-**Programación de la Interfaz (Formulario)**
+En este caso, el proceso es ligeramente diferente al anterior:
+
+1. Obtenemos el JSON completo
+2. Lo convertimos en un objeto (`JObject`)
+3. Accedemos a la propiedad `results`
+4. Convertimos esa lista a objetos `Pelicula`
+
+Esto se debe a que el JSON no es directamente una lista, sino un objeto que contiene dicha lista.
+
+💡 Nota:
+
+La API Key es un identificador personal que permite a la API saber quién está realizando las peticiones.
+
+No se debe compartir ni subir a repositorios públicos.
+
+<br>
+
+## Programación de la Interfaz (Formulario)
+
+### 🔄 Flujo de la aplicación
+
+1. Al iniciar el formulario, se realiza la llamada a la API
+2. Se obtiene la lista de películas
+3. Se muestra la primera película
+4. El usuario puede navegar entre ellas mediante los botones
+5. Cada cambio actualiza la información y la imagen
+
+Este flujo es el mismo que en el ejemplo anterior, pero aplicado a un caso más completo.
 
 Este sería el código que tendríamos en nuestro formulario. Se han puesto los distintos eventos del mismo:
 
@@ -524,9 +781,19 @@ List<Pelicula> listaPeliculas = null;
 
 int _posicion = 0;
 
+// Cliente http para mostrar imágenes
+private HttpClient _httpClient = new HttpClient();
+
 private async void obtenerPeliculasActuales()
 {
     listaPeliculas = await peliculasController.GetPeliculasNowPlaying();
+
+    if (listaPeliculas == null || listaPeliculas.Count == 0)
+    {
+        MessageBox.Show("No se pudieron cargar las películas.");
+        return;
+    }
+
     mostrarPelicula(_posicion);
 }
 
@@ -534,15 +801,16 @@ private async void obtenerPeliculasActuales()
 // Cargado las películas y carga la de pos
 private async void mostrarPelicula(int pos)
 {
+    if (listaPeliculas == null || pos < 0 || pos >= listaPeliculas.Count)
+        return;
+
     lblNombrePelicula.Text = listaPeliculas[pos].title;
     string size = "w500";
     string imageUrl = "https://image.tmdb.org/t/p/" + size + listaPeliculas[pos].poster_path; // Reemplaza con la URL de tu imagen
 
     try
     {
-        HttpClient httpClient = new HttpClient();
-
-        byte[] imageBytes = await httpClient.GetByteArrayAsync(imageUrl);
+        byte[] imageBytes = await _httpClient.GetByteArrayAsync(imageUrl);
         using (var ms = new System.IO.MemoryStream(imageBytes))
         {
             pictureBox1.Image = System.Drawing.Image.FromStream(ms);
