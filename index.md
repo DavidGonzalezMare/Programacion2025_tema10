@@ -20,6 +20,8 @@
 
 [*7. The Movie DataBase*](#_apartado7)
 
+[*8. Acceso a Supabase mediante API Rest*](#_apartado8)
+
 
 <br>
 <br>
@@ -550,9 +552,9 @@ private void lnkImagen_LinkClicked(object sender, LinkLabelLinkClickedEventArgs 
     }
 }
 
-private async void mostrarInfoComarca()
+// TODO: Faltaría implementar este código por el alumno 
+/*private async void mostrarInfoComarca()
 {
-    //listaComarcas = await comarcasController.GetComarcas(provincia);
     ComarcaInfo comarcaInfo = await _comarcasController.GetComarcaInfo(lblNombreComarca.Text);
 
     MessageBox.Show(comarcaInfo.ToString());
@@ -561,7 +563,7 @@ private async void mostrarInfoComarca()
 private void btnInfoComarca_Click(object sender, EventArgs e)
 {
     mostrarInfoComarca();
-}
+}*/
 ```
 
 💡 Observación:
@@ -861,3 +863,449 @@ private void btnUltimo_Click(object sender, EventArgs e)
 ```
 
 Se deja para el alumno la implementación del botón "Ojo" en el que podemos mostrar en un nuevo formulario los datos que nos interesen de la película actualmente seleccionada.
+
+<br>
+<br>
+
+
+# <a name="_apartado8"></a>8. Acceso a Supabase mediante API REST
+
+En el tema 9 hemos trabajado con Supabase utilizando una librería de C#, que nos permitía acceder a la base de datos de forma directa mediante objetos.
+
+Sin embargo, como hemos visto en este tema, muchas aplicaciones se comunican con los datos a través de APIs REST.
+
+---
+
+💡 **Idea clave**
+
+Supabase también proporciona una API REST automáticamente para cada una de sus tablas.
+
+Esto significa que **no es necesario utilizar el cliente de Supabase**, 
+sino que podemos acceder a los datos directamente mediante peticiones HTTP, 
+igual que hemos hecho en los ejemplos anteriores.
+
+Es decir, **lo que hacíamos en el tema 9 con el SDK, en realidad se estaba realizando 
+mediante llamadas a una API REST por debajo.**
+
+---
+
+## Supabase como API REST
+
+Supabase utiliza una herramienta llamada **PostgREST**, que convierte automáticamente una base de datos PostgreSQL en una API REST completa.
+
+Esto significa que:
+
+- Cada tabla se expone como un recurso accesible mediante una URL
+- Podemos consultar los datos utilizando peticiones HTTP
+- No es necesario desarrollar un backend adicional
+
+---
+
+Por ejemplo, si tenemos una tabla `students`, podremos acceder a ella mediante una dirección como:
+
+GET https://TU-PROYECTO.supabase.co/rest/v1/students
+
+---
+
+## Métodos HTTP en Supabase
+
+Como cualquier API REST, Supabase utiliza los métodos HTTP estándar para realizar operaciones sobre los datos:
+
+| Método | Acción                         | Equivalente en BD |
+|--------|--------------------------------|--------------------|
+| GET    | Obtener datos                  | SELECT             |
+| POST   | Crear un nuevo registro        | INSERT             |
+| PATCH  | Actualizar un registro         | UPDATE             |
+| DELETE | Eliminar un registro           | DELETE             |
+
+En este tema nos hemos centrado únicamente en el método **GET**, que permite obtener información desde una API.
+
+Sin embargo, como podemos ver, es posible realizar todas las operaciones sobre los datos utilizando estos métodos.
+
+## ¿Cómo podemos ver los endpoints en Supabase?
+
+Todos los proyectos de Supabase disponen de una API REST que podemos utilizar para consultar los datos.
+
+Podemos encontrar la información de esta API en el panel del proyecto:
+
+- En **Project Settings → Data API**, donde obtenemos la URL base de la API.
+- En **API Docs**, donde podemos ver las distintas llamadas disponibles para cada tabla.
+
+![API Docs](./images/imagen81.png)
+
+---
+
+Cada tabla de nuestra base de datos se expone como un recurso.
+
+Por ejemplo, si tenemos una tabla `students`, podremos acceder a ella mediante una URL como:
+
+GET https://TU-PROYECTO.supabase.co/rest/v1/students
+
+---
+
+Podemos probar estas llamadas fácilmente en el navegador o en herramientas como **Postman**, obteniendo como resultado un JSON con los datos:
+
+![Postman](./images/imagen82.png)
+
+y los Headers:
+
+![Postman](./images/imagen83.png)
+
+obteniendo los resultados como un JSON:
+
+![Postman](./images/imagen84.png)
+
+
+<br>
+
+## Relación con el tema anterior
+
+En el tema 9 hemos desarrollado una aplicación utilizando Supabase a través de su librería de C#.  
+Para ello utilizábamos un repositorio que encapsulaba el acceso a los datos.
+
+Por ejemplo, para obtener los estudiantes hacíamos algo similar a:
+
+```csharp
+await _repo.GetAllAsync();
+```
+
+Internamente, este repositorio utilizaba el **cliente de Supabase** para realizar la consulta.
+
+Sin embargo, como hemos visto en este apartado, Supabase proporciona una API REST que permite
+realizar estas mismas operaciones mediante peticiones HTTP.
+
+Es decir, en lugar de utilizar el cliente de Supabase, podemos acceder directamente a los datos mediante llamadas a la API.
+
+---
+
+### Idea clave:
+
+No cambia la aplicación, únicamente cambia la forma en la que accedemos a los datos.
+
+---
+
+## Modificación del acceso a datos
+
+A continuación, vamos a modificar el acceso a datos del tema anterior.
+
+En lugar de utilizar el cliente de Supabase dentro del repositorio, vamos a realizar las peticiones directamente a la API REST.
+
+De esta forma:
+
+- Mantendremos el modelo de datos (`Student`)
+- Mantendremos la interfaz de usuario
+- Mantendremos el repositorio
+- Sustituiremos el acceso a datos por llamadas HTTP
+
+Es decir, **reutilizamos toda la aplicación anterior**, cambiando únicamente la forma en la que obtenemos los datos.
+
+Para poder realizar las peticiones a la API REST utilizaremos la clase `HttpClient`, que nos permite realizar solicitudes HTTP desde C#.
+
+Además, necesitaremos conocer:
+
+- La URL de la API de Supabase
+- La tabla a la que queremos acceder (`students`)
+- Y la **anon key**, que utilizaremos como cabecera para poder realizar la petición
+
+En nuestro caso, la llamada que realizaremos será equivalente a:
+
+GET https://TU-PROYECTO.supabase.co/rest/v1/students
+
+<br>
+
+### Obtener estudiantes mediante API REST
+
+Vamos a implementar un método que nos permita obtener la lista de estudiantes, 
+igual que hacíamos en el tema anterior, pero utilizando directamente la API REST.
+
+Para ello utilizaremos `HttpClient` y realizaremos una petición GET a la API de Supabase.
+
+En este caso, **no será necesario modificar el controlador del tema anterior**, ya que seguirá utilizando el repositorio.
+
+Lo que cambia será la **implementación del repositorio**, que en lugar de utilizar el cliente de Supabase realizará las peticiones directamente a la API REST.
+
+## Repositorio con API REST
+
+Vamos a modificar el repositorio del tema anterior para que, en lugar de utilizar el cliente de Supabase, realice las peticiones a la API REST utilizando `HttpClient`.
+
+De esta forma mantenemos la misma estructura de la aplicación, cambiando únicamente la tecnología de acceso a datos.
+
+```csharp
+using System.Net.Http;
+using Newtonsoft.Json;
+
+namespace Ejemplo01Students.Repositories
+{
+    public class StudentsRepository
+    {
+        private readonly HttpClient _httpClient;
+
+        private readonly string _projectUrl = "https://TU-PROYECTO.supabase.co/rest/v1";
+        private readonly string _apiKey = "TU_ANON_KEY";
+
+        public StudentsRepository()
+        {
+            _httpClient = new HttpClient();
+
+            _httpClient.DefaultRequestHeaders.Add("apikey", _apiKey);
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+            _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+            _httpClient.DefaultRequestHeaders.Add("Prefer", "return=representation");
+        }
+
+        private void CheckResponse(HttpResponseMessage response, string operation)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception(
+                    $"Error en {operation}: ({(int)response.StatusCode}) {response.ReasonPhrase}"
+                );
+            }
+        }
+
+        public async Task<List<Student>> GetAllAsync()
+        {
+            try
+            {
+                string url = $"{_projectUrl}/students?select=*&order=id.asc";
+
+                HttpResponseMessage response = await _httpClient.GetAsync(url);
+
+                CheckResponse(response, "GetAllAsync");
+
+                string json = await response.Content.ReadAsStringAsync();
+
+                var data = JsonConvert.DeserializeObject<List<Student>>(json);
+
+                return data ?? new List<Student>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error al obtener estudiantes: " + ex.Message);
+                return new List<Student>();
+            }
+        }
+    }
+}
+```
+
+### Funcionamiento del repositorio
+
+En este caso, el repositorio es el encargado de realizar las peticiones HTTP a la API REST de Supabase.
+
+El proceso es:
+
+1. Construir la URL del recurso
+2. Realizar la petición HTTP
+3. Obtener la respuesta en formato JSON
+4. Convertir ese JSON a objetos de C#
+
+Es decir:
+
+**API REST → JSON → objetos C#**
+
+---
+
+### Relación con el tema anterior
+
+En el tema 9 el repositorio utilizaba el cliente de Supabase.
+
+En este caso, el repositorio realiza directamente las peticiones HTTP a la API REST.
+
+Sin embargo, desde el controlador no apreciamos ninguna diferencia:
+
+```csharp
+await _repo.GetAllAsync();
+```
+
+## Insertar un estudiante
+
+Para insertar un nuevo estudiante utilizamos una petición **POST**.
+
+En este caso:
+
+- Creamos un objeto `Student`
+- Lo convertimos a formato JSON
+- Lo enviamos en el cuerpo de la petición
+
+La API REST procesa la petición y devuelve el objeto creado, que convertimos de nuevo a nuestro modelo.
+
+Tendríamos esta función en nuestro StudentsRepository:
+
+```csharp
+public async Task<Student?> InsertAsync(Student student)
+{
+    if (student is null)
+        throw new ArgumentNullException(nameof(student));
+
+    try
+    {
+        // Convertimos el objeto a JSON
+        string json = JsonConvert.SerializeObject(student);
+
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        // URL de la tabla
+        string url = $"{_projectUrl}/students";
+
+        // Petición POST
+        HttpResponseMessage response = await _httpClient.PostAsync(url, content);
+
+        // Comprobamos errores
+        CheckResponse(response, "InsertAsync");
+
+        // Leemos JSON de respuesta
+        string responseJson = await response.Content.ReadAsStringAsync();
+
+        var result = JsonConvert.DeserializeObject<List<Student>>(responseJson);
+
+        return result?.FirstOrDefault();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Error al insertar estudiante: " + ex.Message);
+        return null;
+    }
+}
+```
+
+De nuevo, no hay ningún cambio en nuestro controller:
+
+```csharp
+return await _repo.InsertAsync(student);
+```
+
+## Actualizar y eliminar estudiantes
+
+Las operaciones de actualización y borrado siguen el mismo patrón que las anteriores, pero incorporan un elemento nuevo: el uso de filtros en la URL para indicar sobre qué registro queremos actuar.
+
+Tendríamos los dos métodos siguientes en el repositorio:
+
+```csharp
+public async Task<Student?> UpdateAsync(Student student)
+{
+    if (student is null)
+        throw new ArgumentNullException(nameof(student));
+
+    if (student.Id is null || student.Id <= 0)
+        throw new ArgumentOutOfRangeException(nameof(student.Id));
+
+    try
+    {
+        string json = JsonConvert.SerializeObject(student);
+
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        string url = $"{_projectUrl}/students?id=eq.{student.Id}";
+
+        var request = new HttpRequestMessage(new HttpMethod("PATCH"), url)
+        {
+            Content = content
+        };
+
+        HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+        CheckResponse(response, "UpdateAsync");
+
+        string responseJson = await response.Content.ReadAsStringAsync();
+
+        var result = JsonConvert.DeserializeObject<List<Student>>(responseJson);
+
+        return result?.FirstOrDefault();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Error al actualizar estudiante: " + ex.Message);
+        return null;
+    }
+}
+
+public async Task<bool> DeleteAsync(int id)
+{
+    if (id <= 0)
+        throw new ArgumentOutOfRangeException(nameof(id));
+
+    try
+    {
+        string url = $"{_projectUrl}/students?id=eq.{id}";
+
+        HttpResponseMessage response = await _httpClient.DeleteAsync(url);
+
+        CheckResponse(response, "DeleteAsync");
+
+        return true;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Error al eliminar estudiante: " + ex.Message);
+        return false;
+    }
+}
+```
+
+Para actualizar y eliminar registros utilizamos los métodos HTTP **PATCH** y **DELETE**.
+
+En ambos casos, la API REST utiliza filtros en la URL para indicar qué registro debemos modificar o eliminar.
+
+Por ejemplo:
+
+- `?id=eq.5` → indica que queremos actuar sobre el registro con id = 5
+
+Estas operaciones siguen el mismo patrón que las anteriores:
+
+- Convertir datos a JSON (en el caso de PATCH)
+- Realizar la petición HTTP
+- Procesar la respuesta
+
+De esta forma completamos las operaciones CRUD utilizando la API REST de Supabase.
+
+## Conclusiones
+
+En este apartado hemos adaptado la aplicación del tema anterior para trabajar con la API REST de Supabase.
+
+Para ello, hemos mantenido la misma estructura de la aplicación:
+
+- Modelo (`Student`)
+- Controlador
+- Interfaz
+
+y hemos modificado únicamente el repositorio, que ahora realiza peticiones HTTP en lugar de utilizar el cliente de Supabase.
+
+---
+
+Hemos implementado las operaciones CRUD mediante la API REST:
+
+- GET → Obtener datos
+- POST → Insertar registros
+- PATCH → Actualizar registros
+- DELETE → Eliminar registros
+
+Todas ellas siguen el mismo patrón:
+
+**HTTP → JSON → objetos C#**
+
+---
+
+### 🔗 Relación con el tema anterior
+
+Si comparamos con el tema 9:
+
+- Antes utilizábamos el cliente de Supabase
+- Ahora utilizamos directamente su API REST
+
+Sin embargo, desde el resto de la aplicación no hay diferencias:
+
+```csharp
+await _repo.GetAllAsync();
+await _repo.InsertAsync(student);
+await _repo.UpdateAsync(student);
+await _repo.DeleteAsync(id);
+```
+
+Esto demuestra que podemos cambiar la tecnología de acceso a datos sin modificar el resto de la aplicación.
+
+### Observación final
+
+La estructura utilizada (controlador + repositorio) nos permite separar la lógica de la aplicación del acceso a datos.  
+
+En este caso hemos cambiado únicamente la forma de acceso, pasando de utilizar un SDK a trabajar directamente con peticiones HTTP, lo que nos ayuda a entender cómo funcionan realmente las APIs REST.
