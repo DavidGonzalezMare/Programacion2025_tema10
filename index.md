@@ -1040,6 +1040,7 @@ namespace Ejemplo01Students.Repositories
     {
         private readonly HttpClient _httpClient;
 
+        // ATENCIÓN: En projectUrl no olvidar añadir: /rest/v1
         private readonly string _projectUrl = "https://TU-PROYECTO.supabase.co/rest/v1";
         private readonly string _apiKey = "TU_ANON_KEY";
 
@@ -1141,7 +1142,15 @@ public async Task<Student?> InsertAsync(Student student)
     try
     {
         // Convertimos el objeto a JSON
-        string json = JsonConvert.SerializeObject(student);
+        // Hacemos este paso para evitar serializar el id
+        // ya que se pone automáticamente.
+        var obj = new
+        {
+            name = student.Name,
+            age = student.Age
+        };
+
+        string json = JsonConvert.SerializeObject(obj);
 
         var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
@@ -1258,6 +1267,48 @@ Estas operaciones siguen el mismo patrón que las anteriores:
 - Procesar la respuesta
 
 De esta forma completamos las operaciones CRUD utilizando la API REST de Supabase.
+
+## Obtener estudiante 
+
+Vamos a realizar también el método en el repositorio que nos permite obtener un estudiante a partir de un id, ya que si luego queremos adaptar ejercicios del tema 9 nos va a ser muy útil:
+
+```csharp
+public async Task<Student?> GetByIdAsync(int id)
+{
+    if (id <= 0)
+        throw new ArgumentOutOfRangeException(nameof(id));
+
+    try
+    {
+        // Filtramos por id
+        string url = $"{_projectUrl}/students?id=eq.{id}&select=*";
+
+        HttpResponseMessage response = await _httpClient.GetAsync(url);
+
+        CheckResponse(response, "GetByIdAsync");
+
+        string json = await response.Content.ReadAsStringAsync();
+
+        var result = JsonConvert.DeserializeObject<List<Student>>(json);
+
+        // Supabase siempre devuelve lista → cogemos el primero
+        return result?.FirstOrDefault();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Error al obtener estudiante por id: " + ex.Message);
+        return null;
+    }
+}
+```
+
+### Obtener un estudiante por id
+
+Podemos obtener un único estudiante utilizando un filtro en la URL.
+
+Por ejemplo, con `id=eq.5` indicamos que queremos el estudiante cuyo id sea 5.
+
+Aunque esperamos un único resultado, la API REST siempre devuelve una lista, por lo que debemos extraer el primer elemento.
 
 ## Conclusiones
 
